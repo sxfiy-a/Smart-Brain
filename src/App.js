@@ -6,6 +6,8 @@ import Rank from './components/Rank/Rank.js';
 import ImageURLForm from './components/ImageURLForm/ImageURLForm.js';
 import Image from './components/Image/Image.js';
 import Clarifai from "clarifai";
+import SignIn from './components/SignIn/SignIn';
+import Register from './components/Register/Register';
 
 const app = new Clarifai.App({
   apiKey: "049ae2cb9d8f4a40950bcf40192388cd",
@@ -28,7 +30,7 @@ const particleOptions =
       "type": "circle",
       "stroke": {
         "width": 0,
-        "color": "#000000"
+        "color": "#ffffff"
       },
       "polygon": {
         "nb_sides": 5
@@ -63,7 +65,7 @@ const particleOptions =
     },
     "move": {
       "enable": true,
-      "speed": 2,
+      "speed": 1,
       "direction": "none",
       "random": false,
       "straight": false,
@@ -73,10 +75,10 @@ const particleOptions =
         "rotateX": 600,
         "rotateY": 1200
       }
-    }
-  },
+    } 
+   },
   "interactivity": {
-    "detect_on": "canvas",
+    "detect_on": "window",
     "events": {
       "onhover": {
         "enable": true,
@@ -97,7 +99,9 @@ class App extends Component {
     this.state = {
       input: '',
       imageURL: '',
-      box: {}
+      box: {},
+      route: 'signin',
+      isSignedIn: false
     }
   }
 
@@ -115,7 +119,6 @@ class App extends Component {
   }
 
   displayDetectedFace = (box) => {
-    console.log(box);
     this.setState({ box });
   }
   onInputChange = (event) => {
@@ -133,20 +136,38 @@ class App extends Component {
     
   }
 
+  onRouteChange = (route) => {
+    this.setState({route: route});
+    if(route === 'signout') 
+      this.setState({isSignedIn: false});
+    else if(route==='home')
+      this.setState({isSignedIn: true});
+  }
 
   render() {
+    const { isSignedIn, imageURL, route, box } = this.state;
     return (
       <div className="App">
-        <div style={{ position: 'absolute'}}>
-          <Particles height="100%" width="100vw" className='particles'
+           <div> 
+          <Particles height="100vh" width="100vw" className='particles'
             params={particleOptions} />
-        </div>     
-        <Navigation />
-        <Rank />
-        <ImageURLForm 
-          onInputChange={this.onInputChange} 
-          onDetect={this.onDetect}/>
-        <Image box={this.state.box} imageURL={this.state.imageURL}/>
+        </div>  
+        <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} />
+        { route === 'home' 
+          ? <div>          
+              <Rank />
+              <ImageURLForm 
+                onInputChange={this.onInputChange} 
+                onDetect={this.onDetect}/>
+              <Image box={box} imageURL={imageURL}/>
+            </div>
+          : (
+            route === 'signin' 
+            ? <SignIn onRouteChange={this.onRouteChange} />
+            : <Register onRouteChange={this.onRouteChange} />
+          ) 
+        }
+       
       </div>
     );
   }
