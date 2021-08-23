@@ -101,8 +101,22 @@ class App extends Component {
       imageURL: '',
       box: {},
       route: 'signin',
-      isSignedIn: false
+      isSignedIn: false,
+      user: {
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: ''
+      }
     }
+  }
+
+  componentDidMount() {
+    fetch('http://localhost:3000/')
+      .then(response => response.json())
+      .then(console.log)
+      .catch(err=> console.log(err));
   }
 
   calculateFaceLocation = (data) => {
@@ -131,19 +145,43 @@ class App extends Component {
     this.setState({ imageURL: this.state.input });
     app.models
       .predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
-      .then(response => this.displayDetectedFace(this.calculateFaceLocation(response)))
+      .then(response => {
+        if(response) {
+          fetch('http://localhost:3000/image', {
+            method: 'put',
+            headers: {'Content-Type':  'application/json'},
+            body: JSON.stringify({
+              id: this.state.user.id
+            })
+          })
+            .then(response => response.json())
+            .then(count => {
+              this.setState(Object.assign(this.state.user, { entries: count }))
+            })
+        }
+        this.displayDetectedFace(this.calculateFaceLocation(response))
+      })
       .catch(err => console.log(err));
     
   }
 
   onRouteChange = (route) => {
     this.setState({route: route});
-    if(route === 'signout') 
+    if(route === 'signin') 
       this.setState({isSignedIn: false});
     else if(route==='home')
       this.setState({isSignedIn: true});
   }
 
+  loadUser = (data) => {
+    this.setState({ user: {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      entries: data.entries,
+      joined: data.joined
+    }})
+  }
   render() {
     const { isSignedIn, imageURL, route, box } = this.state;
     return (
@@ -155,7 +193,7 @@ class App extends Component {
         <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} />
         { route === 'home' 
           ? <div>          
-              <Rank />
+              <Rank name={this.state.user.name} entries={this.state.user.entries} />
               <ImageURLForm 
                 onInputChange={this.onInputChange} 
                 onDetect={this.onDetect}/>
@@ -163,8 +201,8 @@ class App extends Component {
             </div>
           : (
             route === 'signin' 
-            ? <SignIn onRouteChange={this.onRouteChange} />
-            : <Register onRouteChange={this.onRouteChange} />
+            ? <SignIn loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
+            : <Register loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
           ) 
         }
        
